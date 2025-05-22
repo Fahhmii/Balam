@@ -81,36 +81,44 @@ async function main() {
   yesterday.setDate(yesterday.getDate() - 1)
 
   // Absensi untuk Budi
-  await prisma.attendance.createMany({
-    data: [
-      {
-        userId: employee1.id,
-        date: yesterday,
-        checkIn: new Date(yesterday.setHours(8, 0, 0)),
-        checkOut: new Date(yesterday.setHours(17, 0, 0)),
-        status: "present",
-      },
-      {
-        userId: employee1.id,
-        date: today,
-        checkIn: new Date(today.setHours(8, 15, 0)),
-        status: "present",
-      },
-    ],
-    skipDuplicates: true,
-  })
+  try {
+    await prisma.attendance.createMany({
+      data: [
+        {
+          userId: employee1.id,
+          date: yesterday,
+          checkIn: new Date(yesterday.setHours(8, 0, 0)),
+          checkOut: new Date(yesterday.setHours(17, 0, 0)),
+          status: "present",
+        },
+        {
+          userId: employee1.id,
+          date: today,
+          checkIn: new Date(today.setHours(8, 15, 0)),
+          status: "present",
+        },
+      ],
+      skipDuplicates: true,
+    })
+  } catch (error) {
+    console.error("Error creating attendance records:", error)
+  }
 
   // Buat beberapa pengajuan cuti
-  await prisma.leave.create({
-    data: {
-      userId: employee2.id,
-      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5),
-      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7),
-      type: "ANNUAL",
-      reason: "Liburan keluarga",
-      status: "PENDING",
-    },
-  })
+  try {
+    await prisma.leave.create({
+      data: {
+        userId: employee2.id,
+        startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5),
+        endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7),
+        type: "ANNUAL",
+        reason: "Liburan keluarga",
+        status: "PENDING",
+      },
+    })
+  } catch (error) {
+    console.error("Error creating leave request:", error)
+  }
 
   // Buat beberapa slip gaji
   const currentMonth = today.getMonth() + 1
@@ -118,47 +126,51 @@ async function main() {
   const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1
   const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear
 
-  await prisma.payroll.createMany({
-    data: [
-      {
-        userId: employee1.id,
-        month: lastMonth,
-        year: lastMonthYear,
-        basicSalary: 8000000,
-        allowances: 1500000,
-        deductions: 500000,
-        overtimePay: 750000,
-        totalSalary: 9750000,
-        paymentDate: new Date(lastMonthYear, lastMonth - 1, 28),
-        paymentStatus: "paid",
-      },
-      {
-        userId: employee2.id,
-        month: lastMonth,
-        year: lastMonthYear,
-        basicSalary: 6500000,
-        allowances: 1000000,
-        deductions: 400000,
-        overtimePay: 0,
-        totalSalary: 7100000,
-        paymentDate: new Date(lastMonthYear, lastMonth - 1, 28),
-        paymentStatus: "paid",
-      },
-      {
-        userId: employee3.id,
-        month: lastMonth,
-        year: lastMonthYear,
-        basicSalary: 5500000,
-        allowances: 800000,
-        deductions: 350000,
-        overtimePay: 500000,
-        totalSalary: 6450000,
-        paymentDate: new Date(lastMonthYear, lastMonth - 1, 28),
-        paymentStatus: "paid",
-      },
-    ],
-    skipDuplicates: true,
-  })
+  try {
+    await prisma.payroll.createMany({
+      data: [
+        {
+          userId: employee1.id,
+          month: lastMonth,
+          year: lastMonthYear,
+          basicSalary: 8000000,
+          allowances: 1500000,
+          deductions: 500000,
+          overtimePay: 750000,
+          totalSalary: 9750000,
+          paymentDate: new Date(lastMonthYear, lastMonth - 1, 28),
+          paymentStatus: "paid",
+        },
+        {
+          userId: employee2.id,
+          month: lastMonth,
+          year: lastMonthYear,
+          basicSalary: 6500000,
+          allowances: 1000000,
+          deductions: 400000,
+          overtimePay: 0,
+          totalSalary: 7100000,
+          paymentDate: new Date(lastMonthYear, lastMonth - 1, 28),
+          paymentStatus: "paid",
+        },
+        {
+          userId: employee3.id,
+          month: lastMonth,
+          year: lastMonthYear,
+          basicSalary: 5500000,
+          allowances: 800000,
+          deductions: 350000,
+          overtimePay: 500000,
+          totalSalary: 6450000,
+          paymentDate: new Date(lastMonthYear, lastMonth - 1, 28),
+          paymentStatus: "paid",
+        },
+      ],
+      skipDuplicates: true,
+    })
+  } catch (error) {
+    console.error("Error creating payroll records:", error)
+  }
 }
 
 main()

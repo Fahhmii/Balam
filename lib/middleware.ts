@@ -1,8 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import jwt from "jsonwebtoken"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import prisma from "./prisma"
 
 export interface AuthenticatedRequest extends NextApiRequest {
   user?: {
@@ -22,22 +20,36 @@ export async function authMiddleware(req: AuthenticatedRequest, res: NextApiResp
     }
 
     const token = authHeader.split(" ")[1]
+    const secret = process.env.JWT_SECRET
 
-    if (!token) {
-      return res.status(401).json({ error: "Unauthorized: Token tidak valid" })
+    if (!secret) {
+      console.error("JWT_SECRET tidak ditemukan di environment variables")
+      return res.status(500).json({ error: "Internal Server Error" })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    const decoded = jwt.verify(token, secret) as {
       id: string
       email: string
       role: string
     }
 
-    // Tambahkan informasi user ke request
-    req.user = decoded
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    })
+
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: User tidak ditemukan" })
+    }
+
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+    }
 
     next()
   } catch (error) {
+    console.error("Auth middleware error:", error)
     return res.status(401).json({ error: "Unauthorized: Token tidak valid" })
   }
 }
@@ -85,4 +97,24 @@ export function runMiddleware(
 
     runMiddlewareRecursive(0)
   })
+}
+
+// Fungsi helper untuk menggabungkan middleware (tetap dipertahankan untuk kompatibilitas)
+export function withMiddleware(...middlewares: any[]) {
+  return async (req: AuthenticatedRequest, res: NextApiResponse) => {
+    try {
+      for (const middleware of middlewares) {
+        await new Promise<void>((resolve, reject) => {
+          middleware(req, res, (result: any) => {
+            if (result instanceof Error) {
+              return reject(result)
+            }
+            return resolve()
+          })
+        })
+      }
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" })
+    }
+  }
 }
